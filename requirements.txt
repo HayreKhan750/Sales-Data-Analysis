@@ -1,5 +1,7 @@
+# Requirements for Superstore Dashboard
 streamlit
 pandas
 plotly
 scikit-learn
 numpy
+scipy
