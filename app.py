@@ -35,7 +35,15 @@ def load_data():
     # Try loading your actual CSV — update filename to match yours 
     for fname in ['sales.csv','data.csv','sales_data.csv','dataset.csv', 'data/superstore.csv']: 
         if os.path.exists(fname): 
-            return pd.read_csv(fname) 
+            data = pd.read_csv(fname)
+            # Standardize column names for superstore.csv if detected
+            if 'Category' in data.columns and 'Product Name' in data.columns:
+                data = data.rename(columns={
+                    'Order Date': 'Date',
+                    'Category': 'Product',
+                    'Sales': 'Revenue'
+                })
+            return data
 
     # Fallback: generate realistic sample data 
     np.random.seed(42) 
