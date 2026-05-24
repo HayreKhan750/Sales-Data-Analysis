@@ -43,6 +43,10 @@ def load_data():
                     'Category': 'Product',
                     'Sales': 'Revenue'
                 })
+                # Convert Date to datetime robustly
+                data['Date'] = pd.to_datetime(data['Date'], dayfirst=True, errors='coerce')
+                # Drop rows where Date could not be parsed
+                data = data.dropna(subset=['Date'])
             return data
 
     # Fallback: generate realistic sample data 
@@ -146,8 +150,8 @@ with col3:
 
 with col4: 
     st.subheader("📅 Seasonal Revenue Heatmap") 
-    filtered['Month'] = pd.to_datetime(filtered['Date']).dt.month 
-    filtered['Year']  = pd.to_datetime(filtered['Date']).dt.year 
+    filtered['Month'] = filtered['Date'].dt.month 
+    filtered['Year']  = filtered['Date'].dt.year 
     pivot = filtered.pivot_table( 
         values='Revenue', index='Year', columns='Month', aggfunc='sum') 
     fig, ax = plt.subplots(figsize=(7,4)) 
