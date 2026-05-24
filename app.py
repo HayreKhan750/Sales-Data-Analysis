@@ -48,8 +48,7 @@ def load_data():
             for product in products: 
                 base   = {'Software':45000,'Hardware':32000, 
                           'Services':28000,'Consulting':38000}[product] 
-                season = 1.3 if month.month in [11,12] else \ 
-                         1.1 if month.month in [3,4] else 1.0 
+                season = 1.3 if month.month in [11,12] else (1.1 if month.month in [3,4] else 1.0)
                 rev = base * season * np.random.uniform(0.8, 1.2) 
                 rows.append({ 
                     'Date': month, 'Region': region, 
