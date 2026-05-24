@@ -131,7 +131,7 @@ def load_data():
 st.sidebar.markdown("""
     <div style='text-align: center; padding: 20px;'>
         <h2 style='color: #3b82f6; margin-bottom: 0;'>💎 SALES INTEL</h2>
-        <p style='color: #94a3b8; font-size: 12px;'>PREMIUM ANALYTICS v2.0</p>
+        <p style='color: #94a3b8; font-size: 12px;'>Developed by Hayredin</p>
     </div>
     <div style='text-align: center; padding-bottom: 20px;'>
         <a href='https://hayredin.vercel.app' target='_blank' style='text-decoration: none;'>
@@ -183,15 +183,17 @@ if page == "🚀 Executive Dashboard":
     prev_sales = prev_metrics['Sales'].sum()
     sales_delta = ((curr_sales - prev_sales) / prev_sales * 100) if prev_sales > 0 else 0
     
-    curr_profit = curr_metrics['Profit'].sum()
-    prev_profit = prev_metrics['Profit'].sum()
+    # Profit Calculation with safety check
+    has_profit = 'Profit' in f_df.columns
+    curr_profit = curr_metrics['Profit'].sum() if has_profit else 0
+    prev_profit = prev_metrics['Profit'].sum() if has_profit else 0
     profit_delta = ((curr_profit - prev_profit) / prev_profit * 100) if prev_profit > 0 else 0
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         st.markdown(create_metric_card("Total Revenue", f_df['Sales'].sum()), unsafe_allow_html=True)
     with m2:
-        st.markdown(create_metric_card("Net Profit", f_df['Profit'].sum()), unsafe_allow_html=True)
+        st.markdown(create_metric_card("Net Profit", f_df['Profit'].sum() if has_profit else 0), unsafe_allow_html=True)
     with m3:
         st.markdown(create_metric_card("Monthly Growth", curr_sales, sales_delta), unsafe_allow_html=True)
     with m4:
