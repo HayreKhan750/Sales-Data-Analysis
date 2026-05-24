@@ -1,4 +1,4 @@
-# Requirements for Superstore Dashboard
+# Billion Dollar Premium Requirements
 streamlit
 pandas
 plotly
