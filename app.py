@@ -122,6 +122,11 @@ def create_metric_card(label, value, delta=None, is_currency=True):
 def load_data():
     df = pd.read_csv('data/superstore.csv')
     df['Order Date'] = pd.to_datetime(df['Order Date'], dayfirst=True, errors='coerce')
+    
+    # Standardize column names for premium analytics
+    if 'Sales' in df.columns:
+        df = df.rename(columns={'Sales': 'Revenue'})
+    
     df['YearMonth'] = df['Order Date'].dt.to_period('M').dt.to_timestamp()
     df['Year'] = df['Order Date'].dt.year
     df['Month'] = df['Order Date'].dt.month
@@ -179,8 +184,8 @@ if page == "🚀 Executive Dashboard":
     curr_metrics = f_df[f_df['YearMonth'] == curr_month]
     prev_metrics = f_df[f_df['YearMonth'] == prev_month]
     
-    curr_sales = curr_metrics['Sales'].sum()
-    prev_sales = prev_metrics['Sales'].sum()
+    curr_sales = curr_metrics['Revenue'].sum()
+    prev_sales = prev_metrics['Revenue'].sum()
     sales_delta = ((curr_sales - prev_sales) / prev_sales * 100) if prev_sales > 0 else 0
     
     # Profit Calculation with safety check
@@ -191,7 +196,7 @@ if page == "🚀 Executive Dashboard":
 
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.markdown(create_metric_card("Total Revenue", f_df['Sales'].sum()), unsafe_allow_html=True)
+        st.markdown(create_metric_card("Total Revenue", f_df['Revenue'].sum()), unsafe_allow_html=True)
     with m2:
         st.markdown(create_metric_card("Net Profit", f_df['Profit'].sum() if has_profit else 0), unsafe_allow_html=True)
     with m3:
@@ -205,12 +210,17 @@ if page == "🚀 Executive Dashboard":
     t1, t2 = st.tabs(["📈 Revenue Velocity", "🌍 Market Distribution"])
     
     with t1:
-        monthly_trend = f_df.groupby('YearMonth').agg({'Sales': 'sum', 'Profit': 'sum'}).reset_index()
+        agg_dict = {'Revenue': 'sum'}
+        if has_profit:
+            agg_dict['Profit'] = 'sum'
+            
+        monthly_trend = f_df.groupby('YearMonth').agg(agg_dict).reset_index()
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=monthly_trend['YearMonth'], y=monthly_trend['Sales'], name='Revenue',
+        fig.add_trace(go.Scatter(x=monthly_trend['YearMonth'], y=monthly_trend['Revenue'], name='Revenue',
                                  line=dict(color='#3b82f6', width=4), fill='tozeroy', fillcolor='rgba(59, 130, 246, 0.1)'))
-        fig.add_trace(go.Scatter(x=monthly_trend['YearMonth'], y=monthly_trend['Profit'], name='Profit',
-                                 line=dict(color='#10b981', width=3, dash='dot')))
+        if has_profit:
+            fig.add_trace(go.Scatter(x=monthly_trend['YearMonth'], y=monthly_trend['Profit'], name='Profit',
+                                     line=dict(color='#10b981', width=3, dash='dot')))
         fig.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                           margin=dict(l=0, r=0, t=40, b=0), height=450,
                           xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#334155'))
@@ -219,16 +229,16 @@ if page == "🚀 Executive Dashboard":
     with t2:
         c1, c2 = st.columns(2)
         with c1:
-            region_sales = f_df.groupby('Region')['Sales'].sum().reset_index()
-            fig_pie = px.pie(region_sales, values='Sales', names='Region', hole=.6,
+            region_sales = f_df.groupby('Region')['Revenue'].sum().reset_index()
+            fig_pie = px.pie(region_sales, values='Revenue', names='Region', hole=.6,
                              color_discrete_sequence=px.colors.sequential.Blues_r,
                              title="Revenue by Geography")
             fig_pie.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=40, b=0))
             st.plotly_chart(fig_pie, use_container_width=True)
         with c2:
-            cat_sales = f_df.groupby('Category')['Sales'].sum().sort_values(ascending=True).reset_index()
-            fig_bar = px.bar(cat_sales, x='Sales', y='Category', orientation='h',
-                             color='Sales', color_continuous_scale='Blues',
+            cat_sales = f_df.groupby('Category')['Revenue'].sum().sort_values(ascending=True).reset_index()
+            fig_bar = px.bar(cat_sales, x='Revenue', y='Category', orientation='h',
+                             color='Revenue', color_continuous_scale='Blues',
                              title="Revenue by Category")
             fig_bar.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=40, b=0))
             st.plotly_chart(fig_bar, use_container_width=True)
@@ -250,7 +260,7 @@ elif page == "🔮 Predictive Engine":
             le_map[col] = le
             
         X = df[[f'{col}_enc' for col in features]]
-        y = df['Sales']
+        y = df['Revenue']
         
         model = RandomForestRegressor(n_estimators=200, max_depth=10, random_state=42)
         model.fit(X, y)
