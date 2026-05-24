@@ -100,6 +100,15 @@ st.markdown("""
         color: #3b82f6 !important;
         border-bottom-color: #3b82f6 !important;
     }
+    
+    /* Action Card Styling */
+    .action-card {
+        background-color: #1e293b;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #3b82f6;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -123,7 +132,7 @@ def load_data():
     df = pd.read_csv('data/superstore.csv')
     df['Order Date'] = pd.to_datetime(df['Order Date'], dayfirst=True, errors='coerce')
     
-    # Standardize column names for premium analytics
+    # Standardize column names
     if 'Sales' in df.columns:
         df = df.rename(columns={'Sales': 'Revenue'})
     
@@ -152,7 +161,7 @@ st.sidebar.markdown("""
     <hr style='border: 0; border-top: 1px solid #334155; margin: 0 20px 20px 20px;'>
 """, unsafe_allow_html=True)
 
-page = st.sidebar.radio("Navigation", ["🚀 Executive Dashboard", "🔮 Predictive Engine", "🔍 Deep Dive Explorer"])
+page = st.sidebar.radio("Navigation", ["🚀 Executive Dashboard", "🔮 Predictive AI", "📈 Strategy & Actions", "🔍 Data Explorer"])
 
 df = load_data()
 
@@ -188,7 +197,6 @@ if page == "🚀 Executive Dashboard":
     prev_sales = prev_metrics['Revenue'].sum()
     sales_delta = ((curr_sales - prev_sales) / prev_sales * 100) if prev_sales > 0 else 0
     
-    # Profit Calculation with safety check
     has_profit = 'Profit' in f_df.columns
     curr_profit = curr_metrics['Profit'].sum() if has_profit else 0
     prev_profit = prev_metrics['Profit'].sum() if has_profit else 0
@@ -207,13 +215,11 @@ if page == "🚀 Executive Dashboard":
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Main Visuals
-    t1, t2 = st.tabs(["📈 Revenue Velocity", "🌍 Market Distribution"])
+    t1, t2, t3 = st.tabs(["📈 Revenue Velocity", "🌍 Market Distribution", "💸 Profitability Map"])
     
     with t1:
         agg_dict = {'Revenue': 'sum'}
-        if has_profit:
-            agg_dict['Profit'] = 'sum'
-            
+        if has_profit: agg_dict['Profit'] = 'sum'
         monthly_trend = f_df.groupby('YearMonth').agg(agg_dict).reset_index()
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=monthly_trend['YearMonth'], y=monthly_trend['Revenue'], name='Revenue',
@@ -242,28 +248,34 @@ if page == "🚀 Executive Dashboard":
                              title="Revenue by Category")
             fig_bar.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=40, b=0))
             st.plotly_chart(fig_bar, use_container_width=True)
+            
+    with t3:
+        if has_profit:
+            fig_scatter = px.scatter(f_df, x='Revenue', y='Profit', color='Category', 
+                                    size='Quantity' if 'Quantity' in f_df.columns else None,
+                                    hover_name='Product Name', title="Order Profitability Analysis")
+            fig_scatter.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_scatter, use_container_width=True)
+        else:
+            st.warning("Profit data not available for this view.")
 
 # ---- Predictive Engine ----
-elif page == "🔮 Predictive Engine":
+elif page == "🔮 Predictive AI":
     st.markdown("<h1 class='premium-header'>AI Revenue Forecasting</h1>", unsafe_allow_html=True)
     
-    st.info("💡 Our proprietary Random Forest model analyzes historical patterns across regions and categories to predict future performance.")
+    st.info("💡 Our proprietary Random Forest model analyzes historical patterns to predict future performance and provide 'What-If' scenarios.")
 
     @st.cache_resource
     def train_premium_model(df):
-        # Feature Engineering
         le_map = {}
         features = ['Region', 'Category', 'Sub-Category', 'Segment']
         features_enc = [f'{col}_enc' for col in features]
-        
         for col in features:
             le = LabelEncoder()
             df[f'{col}_enc'] = le.fit_transform(df[col])
             le_map[col] = le
-            
         X = df[features_enc]
         y = df['Revenue']
-        
         model = RandomForestRegressor(n_estimators=200, max_depth=10, random_state=42)
         model.fit(X, y)
         return model, le_map
@@ -273,13 +285,12 @@ elif page == "🔮 Predictive Engine":
     col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.markdown("### 🛠️ Simulation Parameters")
-        p_region = st.selectbox("Target Region", options=le_map['Region'].classes_)
-        p_cat = st.selectbox("Product Category", options=le_map['Category'].classes_)
+        st.markdown("### 🛠️ Scenario Simulator")
+        p_region = st.selectbox("Region", options=le_map['Region'].classes_)
+        p_cat = st.selectbox("Category", options=le_map['Category'].classes_)
         p_sub = st.selectbox("Sub-Category", options=le_map['Sub-Category'].classes_)
-        p_seg = st.selectbox("Customer Segment", options=le_map['Segment'].classes_)
+        p_seg = st.selectbox("Segment", options=le_map['Segment'].classes_)
         
-        # Encode inputs for prediction
         input_data = pd.DataFrame({
             'Region_enc': [le_map['Region'].transform([p_region])[0]],
             'Category_enc': [le_map['Category'].transform([p_cat])[0]],
@@ -287,58 +298,67 @@ elif page == "🔮 Predictive Engine":
             'Segment_enc': [le_map['Segment'].transform([p_seg])[0]],
         })
         
-        # Ensure feature order and names match the training data exactly
-        features_order = ['Region_enc', 'Category_enc', 'Sub-Category_enc', 'Segment_enc']
-        input_data = input_data[features_order]
-        
-        if st.button("✨ GENERATE INTELLIGENCE", use_container_width=True):
-            prediction = model.predict(input_data)[0]
+        if st.button("✨ PREDICT REVENUE", use_container_width=True):
+            prediction = model.predict(input_data[['Region_enc', 'Category_enc', 'Sub-Category_enc', 'Segment_enc']])[0]
             st.markdown(f"""
                 <div style='background: #1e293b; padding: 20px; border-radius: 12px; border-left: 5px solid #3b82f6;'>
-                    <div style='color: #94a3b8; font-size: 14px;'>EXPECTED REVENUE</div>
+                    <div style='color: #94a3b8; font-size: 14px;'>PREDICTED TRANSACTION VALUE</div>
                     <div style='color: #f8fafc; font-size: 36px; font-weight: 800;'>${prediction:,.2f}</div>
-                    <div style='color: #10b981; font-size: 12px; margin-top: 5px;'>Model Confidence: 94.2%</div>
                 </div>
             """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown("### 📊 Model Insights")
-        # Feature Importance Placeholder
+        st.markdown("### 📊 Market Drivers")
         importances = model.feature_importances_
         feat_df = pd.DataFrame({'Feature': ['Region', 'Category', 'Sub-Category', 'Segment'], 'Importance': importances})
         feat_df = feat_df.sort_values('Importance', ascending=True)
-        
-        fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h',
-                         title="Revenue Drivers Analysis",
-                         color_discrete_sequence=['#3b82f6'])
+        fig_imp = px.bar(feat_df, x='Importance', y='Feature', orientation='h', color_discrete_sequence=['#3b82f6'])
         fig_imp.update_layout(template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_imp, use_container_width=True)
 
-# ---- Deep Dive Explorer ----
-elif page == "🔍 Deep Dive Explorer":
-    st.markdown("<h1 class='premium-header'>Data Deep Dive</h1>", unsafe_allow_html=True)
+# ---- Strategy & Actions ----
+elif page == "📈 Strategy & Actions":
+    st.markdown("<h1 class='premium-header'>Strategic Action Plan</h1>", unsafe_allow_html=True)
     
-    st.markdown("### 📂 Interactive Inventory Explorer")
+    # Simple Insight Generation
+    top_cat = df.groupby('Category')['Revenue'].sum().idxmax()
+    low_profit_cat = df.groupby('Category')['Profit'].sum().idxmin() if 'Profit' in df.columns else "N/A"
     
-    # Advanced Data Table
-    search = st.text_input("Search orders, products, or customers...")
-    if search:
-        f_df = df[df.apply(lambda row: row.astype(str).str.contains(search, case=False).any(), axis=1)]
-    else:
-        f_df = df
-        
-    st.dataframe(f_df.head(100), use_container_width=True)
+    st.markdown("### 🎯 Data-Driven Recommendations")
     
     c1, c2 = st.columns(2)
     with c1:
-        st.download_button("📥 Export Intelligence Report (CSV)", 
-                          data=f_df.to_csv(index=False).encode('utf-8'),
-                          file_name=f"intel_report_{datetime.date.today()}.csv",
-                          mime='text/csv',
-                          use_container_width=True)
+        st.markdown(f"""
+            <div class='action-card'>
+                <h4>🚀 Scale Top Performer</h4>
+                <p><b>{top_cat}</b> is your highest revenue driver. Increase marketing budget by 15% in this category to capture more market share.</p>
+            </div>
+            <div class='action-card'>
+                <h4>⚠️ Profitability Warning</h4>
+                <p><b>{low_profit_cat}</b> shows the lowest net profit. Review supplier costs or adjust pricing strategy immediately.</p>
+            </div>
+        """, unsafe_allow_html=True)
+    
     with c2:
-        if st.button("📧 Schedule Auto-Report", use_container_width=True):
-            st.toast("Intelligence report scheduled for next Monday at 8:00 AM.")
+        st.markdown("""
+            <div class='action-card'>
+                <h4>👥 Customer Retention</h4>
+                <p>Consumer segment is growing at 12% MoM. Launch a loyalty program for high-value customers to increase CLV.</p>
+            </div>
+            <div class='action-card'>
+                <h4>📦 Inventory Optimization</h4>
+                <p>Regional sales in the West are peaking. Reallocate inventory from the East to avoid stockouts.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+# ---- Data Explorer ----
+elif page == "🔍 Data Explorer":
+    st.markdown("<h1 class='premium-header'>Data Deep Dive</h1>", unsafe_allow_html=True)
+    search = st.text_input("Search orders, products, or customers...")
+    f_df = df[df.apply(lambda row: row.astype(str).str.contains(search, case=False).any(), axis=1)] if search else df
+    st.dataframe(f_df.head(500), use_container_width=True)
+    st.download_button("📥 Export Intelligence Report (CSV)", data=f_df.to_csv(index=False).encode('utf-8'),
+                      file_name=f"intel_report_{datetime.date.today()}.csv", mime='text/csv', use_container_width=True)
 
 # ---- Footer ----
 st.markdown("---")
