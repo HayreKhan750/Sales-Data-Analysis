@@ -254,12 +254,14 @@ elif page == "🔮 Predictive Engine":
         # Feature Engineering
         le_map = {}
         features = ['Region', 'Category', 'Sub-Category', 'Segment']
+        features_enc = [f'{col}_enc' for col in features]
+        
         for col in features:
             le = LabelEncoder()
             df[f'{col}_enc'] = le.fit_transform(df[col])
             le_map[col] = le
             
-        X = df[[f'{col}_enc' for col in features]]
+        X = df[features_enc]
         y = df['Revenue']
         
         model = RandomForestRegressor(n_estimators=200, max_depth=10, random_state=42)
@@ -277,12 +279,17 @@ elif page == "🔮 Predictive Engine":
         p_sub = st.selectbox("Sub-Category", options=le_map['Sub-Category'].classes_)
         p_seg = st.selectbox("Customer Segment", options=le_map['Segment'].classes_)
         
+        # Encode inputs for prediction
         input_data = pd.DataFrame({
             'Region_enc': [le_map['Region'].transform([p_region])[0]],
             'Category_enc': [le_map['Category'].transform([p_cat])[0]],
-            'SubCategory_enc': [le_map['Sub-Category'].transform([p_sub])[0]],
+            'Sub-Category_enc': [le_map['Sub-Category'].transform([p_sub])[0]],
             'Segment_enc': [le_map['Segment'].transform([p_seg])[0]],
         })
+        
+        # Ensure feature order and names match the training data exactly
+        features_order = ['Region_enc', 'Category_enc', 'Sub-Category_enc', 'Segment_enc']
+        input_data = input_data[features_order]
         
         if st.button("✨ GENERATE INTELLIGENCE", use_container_width=True):
             prediction = model.predict(input_data)[0]
