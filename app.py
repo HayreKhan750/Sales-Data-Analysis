@@ -133,6 +133,18 @@ st.sidebar.markdown("""
         <h2 style='color: #3b82f6; margin-bottom: 0;'>💎 SALES INTEL</h2>
         <p style='color: #94a3b8; font-size: 12px;'>PREMIUM ANALYTICS v2.0</p>
     </div>
+    <div style='text-align: center; padding-bottom: 20px;'>
+        <a href='https://hayredin.vercel.app' target='_blank' style='text-decoration: none;'>
+            <button style='background-color: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%;'>
+                🌐 Visit Portfolio
+            </button>
+        </a>
+        <div style='margin-top: 15px;'>
+            <a href='https://github.com/HayreKhan750' target='_blank' style='color: #94a3b8; text-decoration: none; font-size: 14px; margin-right: 15px;'>🐙 GitHub</a>
+            <a href='https://linkedin.com' target='_blank' style='color: #94a3b8; text-decoration: none; font-size: 14px;'>💼 LinkedIn</a>
+        </div>
+    </div>
+    <hr style='border: 0; border-top: 1px solid #334155; margin: 0 20px 20px 20px;'>
 """, unsafe_allow_html=True)
 
 page = st.sidebar.radio("Navigation", ["🚀 Executive Dashboard", "🔮 Predictive Engine", "🔍 Deep Dive Explorer"])
@@ -313,6 +325,9 @@ elif page == "🔍 Deep Dive Explorer":
 st.markdown("---")
 st.markdown("""
     <div style='text-align: center; color: #64748b; font-size: 14px;'>
-        Built for high-stakes decision making | Powered by 💎 Sales Intel AI | © 2026 Enterprise Solutions
+        Built by <a href='https://hayredin.vercel.app' target='_blank' style='color: #3b82f6; text-decoration: none;'>Hayredin</a> | 
+        Powered by 💎 Sales Intel AI | 
+        <a href='https://github.com/HayreKhan750' target='_blank' style='color: #3b82f6; text-decoration: none;'>GitHub</a> | 
+        © 2026 Enterprise Solutions
     </div>
 """, unsafe_allow_html=True)
